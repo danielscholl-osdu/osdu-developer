@@ -1,0 +1,47 @@
+{{- if and .Values.mise.enabled (not .Values.mise.useMeshConfig) }}
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: ext-authz-mise
+  namespace: {{ .Release.Namespace }}
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.ext_authz
+        typed_config:
+          "@type": "type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz"
+          transport_api_version: V3
+          http_service:
+            server_uri:
+              uri: "http://mise.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.mise.port | default 5000 }}"
+              cluster: "outbound|{{ .Values.mise.port | default 5000 }}|mise.{{ .Release.Namespace }}.svc.cluster.local"
+              timeout: "0.5s"
+            authorization_request:
+              allowed_headers:
+                patterns:
+                - exact: "authorization"
+                - exact: "x-forwarded-for" 
+                - exact: "x-user-id"
+                - exact: "x-app-id"
+                - exact: "original-uri"
+                - exact: "original-method"
+            authorization_response:
+              allowed_upstream_headers:
+                patterns:
+                - exact: "x-user-id"
+                - exact: "x-app-id"
+          failure_mode_allow: false
+          status_on_error:
+            code: 403
+{{- end }}

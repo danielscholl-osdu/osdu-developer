@@ -1,0 +1,28 @@
+{{- if and .Values.mise.enabled .Values.mise.useMeshConfig }}
+# This is an example IstioOperator configuration that adds MISE as an external authorization provider
+# 
+# Note: This file should be used as a reference and applied via 'istioctl apply -f' or using the IstioOperator CR
+# This file is not applied via Helm as it requires cluster-wide privileges and modification of the Istio control plane
+
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: mise
+      envoyExtAuthzHttp:
+        service: mise.{{ .Release.Namespace }}.svc.cluster.local
+        port: {{ .Values.mise.port | default 5000 }}
+        includeHeadersInCheck:
+          - authorization
+          - x-forwarded-for
+          - x-user-id
+          - x-app-id
+          - original-uri
+          - original-method
+        headersToUpstreamOnAllow:
+          - x-user-id
+          - x-app-id
+        statusOnError:
+          code: 403
+{{- end }}

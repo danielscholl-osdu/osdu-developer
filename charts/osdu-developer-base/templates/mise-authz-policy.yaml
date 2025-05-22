@@ -1,0 +1,35 @@
+{{- if .Values.mise.enabled }}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-mise-validation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "osdu-developer-base.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      {{- if .Values.mise.targetLabels }}
+      {{- toYaml .Values.mise.targetLabels | nindent 6 }}
+      {{- else }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- end }}
+  action: CUSTOM
+  provider:
+    name: mise
+  rules:
+    - to:
+        - operation:
+            methods:
+            {{- range .Values.mise.methods | default (list "GET" "POST" "PUT" "DELETE" "PATCH") }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- if .Values.mise.paths }}
+            paths:
+            {{- range .Values.mise.paths }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+{{- end }}

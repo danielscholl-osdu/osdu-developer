@@ -50,3 +50,14 @@ Selector labels
 app.kubernetes.io/name: {{ include "osdu-developer.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/* 
+For MISE integration, define osdu-developer-base specific helpers 
+*/}}
+{{- define "osdu-developer-base.name" -}}
+{{- default "osdu-developer-base" .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "osdu-developer-base.chart" -}}
+{{- printf "%s-%s" "osdu-developer-base" .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}

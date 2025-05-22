@@ -18,6 +18,42 @@ resourceLimits:
   defaultCpuLimits: "1"
   defaultMemoryLimits: "4Gi"
 
+################################################################################
+# MISE Configuration 
+# Microsoft Identity Secure Enclave for additional token validation
+#
+mise:
+  enabled: false                 # Set to true to enable MISE validation
+  useMeshConfig: false           # Set to true if using IstioOperator mesh config instead of EnvoyFilter
+  image:
+    repository: mcr.microsoft.com/mise
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 5000
+  replicas: 2
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  methods:                       # HTTP methods to validate
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "PATCH"
+  # Optional: specific paths to protect (if not specified, all paths will be protected)
+  # paths:
+  #   - "/api/*"
+  # Optional: specific services to target (if not specified, all services will be protected)
+  # targetLabels:
+  #   app.kubernetes.io/name: myservice
+
+################################################################################
+# Blob Upload Configuration
+#
 blobUpload:
   enabled: false
   container: "legal-service-azure-configuration"
