@@ -1,0 +1,39 @@
+{{- if .Values.mise.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-ingressgateway
+  namespace: istio-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: mise-auth
+        image: {{ .Values.mise.image }}
+        imagePullPolicy: {{ .Values.mise.imagePullPolicy }}
+        ports:
+        - containerPort: {{ .Values.mise.port }}
+          protocol: TCP
+          name: http
+        env:
+        {{- range $key, $value := .Values.mise.envVars }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.mise.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.mise.port }}
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: {{ .Values.mise.port }}
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+          periodSeconds: 10
+{{- end -}}

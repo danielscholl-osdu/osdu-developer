@@ -1,0 +1,41 @@
+{{- if .Values.authFilter.enabled -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: ext-authz
+  namespace: {{ .Values.authFilter.namespace }}
+spec:
+  workloadSelector:
+    labels:
+      {{- range $key, $val := .Values.authFilter.workloadSelector.labels }}
+      {{ $key }}: {{ $val }}
+      {{- end }}
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        portNumber: {{ .Values.authFilter.port }}
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+            subFilter:
+              name: "envoy.filters.http.router"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.ext_authz
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+          transport_api_version: V3
+          with_request_body:
+            max_request_bytes: 8192
+            allow_partial_message: true
+          failure_mode_allow: false
+          grpc_service:
+            envoy_grpc:
+              cluster_name: outbound|{{ .Values.authFilter.authPort }}||{{ .Values.authFilter.authHost }}
+            timeout: {{ .Values.authFilter.timeout }}
+          status_on_error:
+            code: Forbidden
+{{- end -}}
