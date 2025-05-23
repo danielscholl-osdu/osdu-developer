@@ -17,3 +17,33 @@ ingress:
     tls:
       mode: SIMPLE
       credentialName: wild-card-tls
+
+# MISE (Microsoft Identity Sidecar Extension) Configuration
+mise:
+  enabled: true                    # Enable the MISE sidecar
+  image: mise-mock:latest          # Mock image for testing
+  imagePullPolicy: IfNotPresent
+  port: 9002
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+  envVars:
+    LOG_LEVEL: "info"              # Log level for MISE (info, debug)
+    DEFAULT_LATENCY_MS: "10"       # Default latency (ms) for response simulation
+
+# EnvoyFilter for external authentication with MISE
+authFilter:
+  enabled: true                    # Enable the external auth filter
+  namespace: istio-system          # Namespace for the EnvoyFilter
+  workloadSelector: 
+    labels:
+      istio: ingressgateway        # Apply to ingress gateway only
+  port: 80                         # Port to apply the filter to
+  authHost: localhost              # Host for auth service (sidecar)
+  authPort: 9002                   # Port for auth service
+  timeout: "0.2s"                  # Timeout for auth requests
+  pathPrefix: "/ext_authz"         # Path prefix for auth requests

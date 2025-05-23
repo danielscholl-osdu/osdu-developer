@@ -1,0 +1,50 @@
+# Example deployment for Istio with MISE Sidecar
+# Use this as a reference for configuring MISE with Istio Ingress Gateway
+
+# Enable MISE sidecar with the mock implementation
+mise:
+  enabled: true
+  image: mise-mock:latest
+  imagePullPolicy: IfNotPresent
+  port: 9002
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+  envVars:
+    LOG_LEVEL: "debug"        # Set to debug for more verbose logging
+    DEFAULT_LATENCY_MS: "5"   # Simulate 5ms latency
+
+# Configure the EnvoyFilter for external authentication
+authFilter:
+  enabled: true
+  namespace: istio-system
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  port: 80
+  authHost: localhost
+  authPort: 9002
+  timeout: "0.2s"
+  pathPrefix: "/ext_authz"
+
+# Standard ingress gateway configuration
+ingress:
+  internalGateway:
+    enabled: true
+    requireSSL: true
+    hosts:
+      - "*"
+    tls:
+      mode: SIMPLE
+      credentialName: wild-card-tls
+  externalGateway:
+    enabled: true
+    hosts:
+      - "*"
+    tls:
+      mode: SIMPLE
+      credentialName: wild-card-tls

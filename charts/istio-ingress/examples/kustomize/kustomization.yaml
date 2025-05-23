@@ -1,0 +1,53 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Add base resources here
+
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: istio-ingressgateway
+        namespace: istio-system
+      spec:
+        template:
+          spec:
+            containers:
+            - name: mise-auth
+              image: mise-mock:latest
+              imagePullPolicy: IfNotPresent
+              ports:
+              - containerPort: 9002
+                protocol: TCP
+                name: http
+              env:
+              - name: LOG_LEVEL
+                value: "info"
+              - name: DEFAULT_LATENCY_MS
+                value: "10"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 100m
+                  memory: 256Mi
+              livenessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 9002
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+                periodSeconds: 10
+              readinessProbe:
+                httpGet:
+                  path: /readyz
+                  port: 9002
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+                periodSeconds: 10
+    target:
+      kind: Deployment
+      name: istio-ingressgateway
