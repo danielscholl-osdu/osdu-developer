@@ -271,6 +271,28 @@ spec:
 
 
 ######################
+## Let's Encrypt Certificate Component
+######################
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
+kind: Kustomization
+metadata:
+  name: component-certs-letsencrypt
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: component-osdu-system
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./software/components/certs-letsencrypt
+  prune: true
+  wait: true
+
+######################
 ## Observability Component
 ######################
 ---
